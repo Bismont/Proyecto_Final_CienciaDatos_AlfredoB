@@ -1,3 +1,7 @@
+Los inputs que ocupan este proyecto pueden obtenerse en
+
+https://drive.google.com/drive/folders/13CceLMygg2dvC1p8NlnSsdqid2EKAjaO?usp=sharing
+
 # Análisis emocional de titulares periodísticos (México 2024–2025)
 
 Este repositorio contiene el código, datos procesados y resultados del proyecto:

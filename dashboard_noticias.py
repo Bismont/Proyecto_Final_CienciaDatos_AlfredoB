@@ -7,9 +7,9 @@ import plotly.express as px
 
 from dash import Dash, dcc, html, Input, Output
 
-# ======================================================
+# ===============================================
 # CARGA DE DATOS
-# ======================================================
+# ===============================================
 df = pd.read_csv("./input_data/noticias_emociones_con_pca.csv")
 df["date"] = pd.to_datetime(df["date"])
 df["year_month"] = df["date"].dt.to_period("M").astype(str)
@@ -18,65 +18,200 @@ df["domain"] = df["domain"].str.lower().str.strip()
 dominios = sorted(df["domain"].unique())
 min_date, max_date = df["date"].min(), df["date"].max()
 
-# ======================================================
-# DASH APP
-# ======================================================
-app = Dash(__name__)
+# ===============================================
+# DASH APP (TEMA OSCURO)
+# ===============================================
+external_css = [
+    {
+        "href": "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap",
+        "rel": "stylesheet"
+    }
+]
+
+app = Dash(__name__, external_stylesheets=external_css)
 app.title = "Dashboard Emocional"
 
+# ---------- Estilos Globales ----------
+DARK_BG = "#111111"
+CARD_BG = "#1c1c1e"
+TEXT_COLOR = "#E6E6E6"
+ACCENT = "#4d88ff"
 
-# ----------- Estilos globals -----------
 STYLE_BOX = {
-    "background": "white",
-    "padding": "18px",
-    "margin": "12px",
-    "borderRadius": "10px",
-    "boxShadow": "0 2px 8px rgba(0,0,0,0.10)"
+    "background": CARD_BG,
+    "padding": "22px",
+    "margin": "16px",
+    "color": TEXT_COLOR,
+    "borderRadius": "14px",
+    "boxShadow": "0 4px 12px rgba(0,0,0,0.35)",
+    "border": "1px solid #222"
 }
 
+# ===============================================
+# HTML Template ajustado (dropdown y datepicker oscuros)
+# ===============================================
+app.index_string = """
+<!DOCTYPE html>
+<html>
+    <head>
+        {%metas%}
+        <style>
+        body {
+            margin: 0;
+            background-color: #111111;
+        }
 
-app.layout = html.Div([
+        /* Dropdown menú oscuro */
+        .Select-control {
+            background-color: #1c1c1e !important;
+            border: 1px solid #333 !important;
+            color: #E6E6E6 !important;
+        }
+        .Select-menu-outer {
+            background-color: #1c1c1e !important;
+            border: 1px solid #333 !important;
+        }
+        .Select-placeholder, .Select-value-label {
+            color: #E6E6E6 !important;
+        }
+        .Select-option {
+            background-color: #1c1c1e !important;
+            color: #E6E6E6 !important;
+        }
 
-    html.H1("Dashboard emocional de noticias", 
-            style={"textAlign": "center", "marginTop": "20px"}),
+        /* DatePickerRange oscuro */
+        .DateInput_input, .DateInput_input_1 {
+            background-color: #1c1c1e !important;
+            color: #E6E6E6 !important;
+            border: 1px solid #333 !important;
+        }
 
-    html.Div([
+        .DateRangePickerInput {
+            background-color: #1c1c1e !important;
+            border: 1px solid #333 !important;
+        }
 
-        # ---- Selección de fuente ----
+        .CalendarDay__default {
+            background-color: #1c1c1e !important;
+            color: #E6E6E6 !important;
+            border: 1px solid #333 !important;
+        }
+
+        .CalendarMonth_caption {
+            color: #fff !important;
+        }
+
+        .CalendarDay__selected {
+            background: #4d88ff !important;
+            color: white !important;
+        }
+
+        .CalendarDay__hovered_span,
+        .CalendarDay__selected_span {
+            background-color: #2a3f70 !important;
+            color: white !important;
+        }
+        </style>
+
+        {%favicon%}
+        {%css%}
+    </head>
+    <body>
+        {%app_entry%}
+        <footer>
+            {%config%}
+            {%scripts%}
+            {%renderer%}
+        </footer>
+    </body>
+</html>
+"""
+
+# ===============================================
+# LAYOUT
+# ===============================================
+app.layout = html.Div(
+    style={
+        "backgroundColor": DARK_BG,
+        "fontFamily": "'Inter', sans-serif",
+        "minHeight": "100vh",
+        "margin": "0",
+        "padding": "20px",
+        "overflowX": "hidden"
+    },
+    children=[
+        html.H1(
+            "Dashboard emocional de noticias",
+            style={
+                "textAlign": "center",
+                "marginTop": "10px",
+                "marginBottom": "25px",
+                "color": TEXT_COLOR,
+                "fontWeight": "700",
+                "letterSpacing": "1px"
+            }
+        ),
+
+        # =======================================
+        #   FILTROS
+        # =======================================
         html.Div([
-            html.Label("Fuente", style={"fontWeight": "bold"}),
-            dcc.Dropdown(
-                id="dominio",
-                options=[{"label": "Todas", "value": "ALL"}] +
-                        [{"label": d, "value": d} for d in dominios],
-                value="ALL"
-            )
-        ], style={"width": "30%", "display": "inline-block"}),
+            html.Div([
+                html.Label("Fuente", style={"fontWeight": "bold", "color": TEXT_COLOR}),
+                dcc.Dropdown(
+                    id="dominio",
+                    options=[{"label": "Todas", "value": "ALL"}] +
+                            [{"label": d, "value": d} for d in dominios],
+                    value="ALL",
+                    style={
+                        "backgroundColor": CARD_BG,
+                        "color": TEXT_COLOR,
+                        "border": "1px solid #333"
+                    }
+                )
+            ], style={"width": "30%", "display": "inline-block"}),
 
-        # ---- Selección de fecha ----
-        html.Div([
-            html.Label("Rango de fechas", style={"fontWeight": "bold"}),
-            dcc.DatePickerRange(
-                id="fechas",
-                start_date=min_date.date(),
-                end_date=max_date.date()
-            )
-        ], style={"width": "40%", "display": "inline-block"}),
+            html.Div([
+                html.Label("Rango de fechas",
+                           style={"fontWeight": "bold", "color": TEXT_COLOR}),
+                dcc.DatePickerRange(
+                    id="fechas",
+                    start_date=min_date.date(),
+                    end_date=max_date.date(),
+                    display_format="YYYY-MM-DD",
+                    minimum_nights=0
+                )
+            ], style={"width": "40%", "display": "inline-block", "paddingLeft": "20px"}),
+        ]),
 
-    ], style={"textAlign": "center"}),
+        # =======================================
+        #   TABS
+        # =======================================
+        dcc.Tabs(
+            id="tabs",
+            value="tab-overview",
+            children=[
+                dcc.Tab(label="Resumen", value="tab-overview",
+                        style={"background": CARD_BG, "color": TEXT_COLOR},
+                        selected_style={"background": ACCENT, "color": "#fff"}),
 
-    # ------------ Tabs principales -----------------
-    dcc.Tabs(id="tabs", value="tab-overview", children=[
-        dcc.Tab(label="Resumen", value="tab-overview"),
-        dcc.Tab(label="Valence", value="tab-valence"),
-        dcc.Tab(label="Arousal", value="tab-arousal"),
-        dcc.Tab(label="PCA emocional", value="tab-pca")
-    ]),
+                dcc.Tab(label="Valence", value="tab-valence",
+                        style={"background": CARD_BG, "color": TEXT_COLOR},
+                        selected_style={"background": ACCENT, "color": "#fff"}),
 
-    html.Div(id="contenido-tab", style=STYLE_BOX)
+                dcc.Tab(label="Arousal", value="tab-arousal",
+                        style={"background": CARD_BG, "color": TEXT_COLOR},
+                        selected_style={"background": ACCENT, "color": "#fff"}),
 
-])
+                dcc.Tab(label="PCA emocional", value="tab-pca",
+                        style={"background": CARD_BG, "color": TEXT_COLOR},
+                        selected_style={"background": ACCENT, "color": "#fff"})
+            ]
+        ),
 
+        html.Div(id="contenido-tab", style=STYLE_BOX)
+    ]
+)
 
 # ======================================================
 # CALLBACK PRINCIPAL
@@ -97,19 +232,42 @@ def actualizar(tab, dominio, f_ini, f_fin):
         df_f = df_f[df_f["domain"] == dominio]
 
     if df_f.empty:
-        return html.Div("No hay datos con estos filtros.")
+        return html.Div("No hay datos con estos filtros.", style={"color": TEXT_COLOR})
 
-    # ---------------- TAB 1: RESUMEN -----------------
+    # ========= Tema dark para todas las figuras =========
+    px.defaults.template = "plotly_dark"
+    px.defaults.color_discrete_sequence = px.colors.qualitative.Plotly
+
+    # Estilo común para las figuras
+    def estilo_fig(fig):
+        fig.update_layout(
+            paper_bgcolor=DARK_BG,
+            plot_bgcolor=DARK_BG,
+            xaxis=dict(
+                showgrid=True,
+                gridcolor="rgba(255,255,255,0.07)",
+                zeroline=False
+            ),
+            yaxis=dict(
+                showgrid=True,
+                gridcolor="rgba(255,255,255,0.07)",
+                zeroline=False
+            ),
+            font=dict(color=TEXT_COLOR)
+        )
+        return fig
+
+    # ---------------- TAB 1 ----------------
     if tab == "tab-overview":
         g = df_f.groupby(["year_month", "domain"]).size().reset_index(name="count")
         fig = px.bar(
             g, x="year_month", y="count", color="domain",
-            title="Número de artículos por mes y fuente"
+            title="Número de artículos por mes y fuente",
         )
         fig.update_layout(xaxis_tickangle=-45, height=450)
-        return dcc.Graph(figure=fig)
+        return dcc.Graph(figure=estilo_fig(fig))
 
-    # ---------------- TAB 2: VALENCE ------------------
+    # ---------------- TAB 2 ----------------
     if tab == "tab-valence":
         g = df_f.groupby(["year_month", "domain"])["valence"].mean().reset_index()
         fig = px.line(
@@ -117,9 +275,9 @@ def actualizar(tab, dominio, f_ini, f_fin):
             title="Valence promedio por mes y fuente"
         )
         fig.update_layout(xaxis_tickangle=-45, height=450)
-        return dcc.Graph(figure=fig)
+        return dcc.Graph(figure=estilo_fig(fig))
 
-    # ---------------- TAB 3: AROUSAL ------------------
+    # ---------------- TAB 3 ----------------
     if tab == "tab-arousal":
         g = df_f.groupby(["year_month", "domain"])["arousal"].mean().reset_index()
         fig = px.line(
@@ -127,21 +285,21 @@ def actualizar(tab, dominio, f_ini, f_fin):
             title="Arousal promedio por mes y fuente"
         )
         fig.update_layout(xaxis_tickangle=-45, height=450)
-        return dcc.Graph(figure=fig)
+        return dcc.Graph(figure=estilo_fig(fig))
 
-    # ---------------- TAB 4: PCA ------------------
+    # ---------------- TAB 4 ----------------
     if tab == "tab-pca":
         fig = px.scatter(
             df_f,
             x="pca_comp1", y="pca_comp2",
-            color="domain" if dominio=="ALL" else None,
+            color="domain" if dominio == "ALL" else None,
             hover_data=["title", "date"],
             title="Mapa emocional (PCA)"
         )
         fig.update_layout(height=500)
-        return dcc.Graph(figure=fig)
+        return dcc.Graph(figure=estilo_fig(fig))
 
-    return html.Div("Tab no reconocida.")
+    return html.Div("Tab no reconocida.", style={"color": TEXT_COLOR})
 
 
 # ======================================================
